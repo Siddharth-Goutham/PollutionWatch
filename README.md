@@ -9,7 +9,8 @@ By leveraging a multi-agent LLM architecture, the platform moves beyond generic 
 ## ✨ Key Features
 
 * **Intelligent Model Routing:** Utilizes OpenRouter to access Google's `gemini-2.5-flash` model, ensuring fast, cost-effective, and highly capable multi-agent reasoning.
-* **Dynamic Data Fusion:** * Pulls real-time localized ground sensor data via the **OpenAQ API** (with AI-simulated fallbacks for low-coverage zones).
+* **Dynamic Data Fusion:** 
+    * Pulls real-time localized ground sensor data via the **OpenAQ API** (with AI-simulated fallbacks for low-coverage zones).
     * Simulates satellite thermal and aerosol indices for macro-level environmental context.
 * **Citizen Vision Analysis:** Allows users to upload photos of active pollution. A multimodal Vision agent analyzes the images to detect smoke density, source types, and severity.
 * **Robust Geocoding:** Unstructured location parsing using Nominatim (OpenStreetMap) to accurately pinpoint constituencies and districts.
@@ -45,7 +46,8 @@ Create a file named `.env` and add the following contents:
 OPENROUTER_API_KEY="your_actual_openrouter_key_here"
 
 # Required: OpenAQ key for live sensor data
-OPENAQ_API_KEY=""
+OPENAQ_API_KEY="your_actual_openaq_key_here"
+\`\`\`
 
 ### 3. Backend Setup (Python)
 Activate your virtual environment and install the Python dependencies:
@@ -68,11 +70,9 @@ Start the Python backend server:
 \`\`\`bash
 python app.py
 \`\`\`
-*(In a separate terminal window, start your Vite dev server or TS server)*:
+*(In a separate terminal window, start your Vite dev server)*:
 \`\`\`bash
 npm run dev
-# OR depending on your package.json configuration:
-# npx ts-node server.ts
 \`\`\`
 
 ---
