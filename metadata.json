@@ -1,0 +1,6 @@
+{
+  "name": "PollutionWatch",
+  "description": "Neighbourhood-level air pollution monitor using multi-agent AI and OpenAQ data.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

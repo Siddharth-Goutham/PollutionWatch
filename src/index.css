@@ -1,0 +1,62 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Space Grotesk", sans-serif;
+}
+
+:root {
+  --bg:        #F8FAFC; /* bg-slate-50 */
+  --surface:   #FFFFFF;
+  --surface-1: #F1F5F9; /* bg-slate-100 */
+  --border:    #E2E8F0; /* border-slate-200 */
+  --border-strong: #CBD5E1; /* border-slate-300 */
+  --text:      #0F172A; /* text-slate-900 */
+  --text-secondary: #475569; /* text-slate-600 */
+  --text-muted:     #94A3B8; /* text-slate-400 */
+
+  --accent:    #4F46E5; /* indigo-600 */
+  --accent-bg: #EEF2FF; /* indigo-50 */
+  --danger:    #DC2626; /* red-600 */
+  --danger-bg: #FEF2F2; /* red-50 */
+  --warning:   #D97706; /* amber-600 */
+  --warning-bg:#FEF3C7; /* amber-50 */
+  --success:   #16A34A; /* green-600 */
+  --success-bg:#F0FDF4; /* green-50 */
+
+  --radius: 12px;
+  --radius-lg: 16px;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+}
+
+/* Leaflet Overrides */
+.leaflet-container {
+  height: 100%;
+  width: 100%;
+  background-color: #f4f4f2 !important;
+  font-family: inherit;
+  z-index: 10;
+}
+
+/* Custom map marker pulse animation */
+@keyframes marker-pulse {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(163, 45, 45, 0.4);
+  }
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 10px rgba(163, 45, 45, 0);
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(163, 45, 45, 0);
+  }
+}
+

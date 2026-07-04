@@ -1,0 +1,1638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PollutionWatch | Multi-Agent Air Quality Dashboard</title>
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  
+  <!-- Leaflet CSS for OpenStreetMap -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            display: ['Space Grotesk', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+  
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+  <!-- Theme Bootloader -->
+  <script>
+    (function() {
+      const savedTheme = localStorage.getItem("theme") || "light";
+      if (savedTheme === "dark") {
+        document.documentElement.classList.add("dark");
+      }
+    })();
+  </script>
+
+  <style>
+    /* Subtle theme adjustments */
+    body {
+      background-color: #f8fafc; /* bg-slate-50 */
+      color: #0f172a; /* text-slate-900 */
+    }
+    
+    /* Transition background and border colors smoothly when toggled */
+    body, header, section, button, input, select, textarea, .bg-white, .bg-slate-50, .bg-slate-100, .bg-slate-200, .border-slate-200, .border-slate-100, .border, .shadow-sm {
+      transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease, filter 0.3s ease;
+    }
+    
+    /* Dark Mode Overrides */
+    html.dark body {
+      background-color: #0b0f19; /* dark slate-950 background */
+      color: #f1f5f9; /* text-slate-100 */
+    }
+    
+    html.dark header {
+      background-color: #111827 !important; /* bg-gray-900 */
+      border-color: #1f2937 !important; /* border-gray-800 */
+    }
+    
+    html.dark h1, html.dark h2, html.dark h3, html.dark h4, html.dark h5, html.dark h6 {
+      color: #ffffff !important;
+    }
+    
+    html.dark .text-slate-900 {
+      color: #f1f5f9 !important;
+    }
+    
+    html.dark .text-slate-800 {
+      color: #e2e8f0 !important;
+    }
+    
+    html.dark .text-slate-700 {
+      color: #cbd5e1 !important;
+    }
+    
+    html.dark .text-slate-600 {
+      color: #94a3b8 !important;
+    }
+    
+    html.dark .text-slate-500 {
+      color: #64748b !important;
+    }
+    
+    html.dark .bg-white {
+      background-color: #1e293b !important; /* bg-slate-800 */
+    }
+    
+    html.dark .border-slate-200 {
+      border-color: #334155 !important; /* border-slate-700 */
+    }
+
+    html.dark .border-slate-100 {
+      border-color: #334155 !important; /* border-slate-700 */
+    }
+    
+    html.dark .bg-slate-50 {
+      background-color: #0f172a !important; /* bg-slate-900 */
+    }
+    
+    html.dark .bg-slate-50\/50 {
+      background-color: rgba(15, 23, 42, 0.5) !important;
+    }
+
+    html.dark .bg-slate-100 {
+      background-color: #0f172a !important; /* bg-slate-900 */
+    }
+
+    html.dark .bg-slate-200 {
+      background-color: #334155 !important;
+    }
+
+    html.dark .bg-indigo-50 {
+      background-color: rgba(99, 102, 241, 0.1) !important;
+    }
+
+    html.dark .bg-indigo-50\/20 {
+      background-color: rgba(99, 102, 241, 0.05) !important;
+    }
+
+    html.dark .bg-indigo-50\/30 {
+      background-color: rgba(99, 102, 241, 0.08) !important;
+    }
+
+    html.dark .bg-indigo-50\/60 {
+      background-color: rgba(99, 102, 241, 0.15) !important;
+    }
+
+    html.dark .text-indigo-700 {
+      color: #818cf8 !important;
+    }
+
+    html.dark .border-indigo-100 {
+      border-color: rgba(99, 102, 241, 0.2) !important;
+    }
+
+    html.dark .bg-amber-50 {
+      background-color: rgba(245, 158, 11, 0.1) !important;
+    }
+
+    html.dark .border-amber-200 {
+      border-color: rgba(245, 158, 11, 0.2) !important;
+    }
+
+    html.dark .text-amber-800 {
+      color: #fbbf24 !important;
+    }
+
+    html.dark .bg-amber-50\/50 {
+      background-color: rgba(245, 158, 11, 0.05) !important;
+    }
+
+    html.dark .bg-green-50, html.dark .bg-emerald-50 {
+      background-color: rgba(16, 185, 129, 0.1) !important;
+    }
+
+    html.dark .border-green-100, html.dark .border-emerald-200 {
+      border-color: rgba(16, 185, 129, 0.2) !important;
+    }
+
+    html.dark .text-green-700, html.dark .text-emerald-700 {
+      color: #34d399 !important;
+    }
+
+    html.dark .bg-rose-50 {
+      background-color: rgba(244, 63, 94, 0.1) !important;
+    }
+
+    html.dark .border-rose-100 {
+      border-color: rgba(244, 63, 94, 0.2) !important;
+    }
+
+    html.dark .text-rose-700 {
+      color: #fb7185 !important;
+    }
+    
+    html.dark input, html.dark textarea, html.dark select {
+      background-color: #0f172a !important;
+      border-color: #334155 !important;
+      color: #ffffff !important;
+    }
+
+    html.dark input::placeholder {
+      color: #475569 !important;
+    }
+
+    html.dark .shadow-sm {
+      box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.5) !important;
+    }
+
+    /* Map tiles dark styling */
+    html.dark .leaflet-tile {
+      filter: invert(1) hue-rotate(180deg) brightness(0.95) contrast(1.1);
+    }
+    
+    html.dark .leaflet-container {
+      background-color: #0f172a !important;
+    }
+    
+    html.dark .leaflet-bar a {
+      background-color: #1e293b !important;
+      color: #ffffff !important;
+      border-bottom: 1px solid #334155 !important;
+    }
+    
+    html.dark .leaflet-popup-content-wrapper {
+      background-color: #1e293b !important;
+      color: #ffffff !important;
+    }
+    
+    html.dark .leaflet-popup-tip {
+      background-color: #1e293b !important;
+    }
+    
+    .map-container {
+      height: 380px;
+      border-radius: 1rem;
+      overflow: hidden;
+      z-index: 10;
+    }
+
+    /* Custom Leaflet Marker Styling */
+    .custom-marker-low {
+      background-color: #16a34a;
+      border: 2px solid white;
+      border-radius: 50%;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    }
+    .custom-marker-medium {
+      background-color: #d97706;
+      border: 2px solid white;
+      border-radius: 50%;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    }
+    .custom-marker-high {
+      background-color: #f43f5e;
+      border: 2px solid white;
+      border-radius: 50%;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    }
+    .custom-marker-critical {
+      background-color: #dc2626;
+      border: 2px solid white;
+      border-radius: 50%;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    }
+  </style>
+</head>
+<body class="font-sans antialiased">
+
+  <!-- ── Brand Header ── -->
+  <header class="bg-white border-b border-slate-200 py-4 px-6 md:px-12">
+    <div class="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-md select-none">
+          🌱
+        </div>
+        <div>
+          <h1 class="text-xl font-bold tracking-tight text-slate-900 flex items-center gap-1.5 font-display">
+            PollutionWatch <span class="text-slate-400 font-normal">| Live Analytics</span>
+          </h1>
+          <p class="text-xs text-slate-500 font-medium">Multi-agent environmental auditing & localized hotspot dispatches</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-3">
+        <div id="location-pill" class="hidden flex items-center gap-4 bg-indigo-50 px-4 py-2 rounded-full border border-indigo-100">
+          <span class="text-xs font-bold text-indigo-700" id="pill-text">📍 Sahibabad, Ghaziabad</span>
+          <span class="h-4 w-[1px] bg-indigo-200"></span>
+          <span class="text-xs text-indigo-600 font-semibold animate-pulse">Live</span>
+        </div>
+        
+        <!-- Premium Theme Toggle Button -->
+        <button id="theme-toggle-btn" class="bg-slate-50 hover:bg-slate-100 active:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 h-9 w-9 rounded-xl transition-all shadow-xs flex items-center justify-center cursor-pointer hover:scale-105 active:scale-95" aria-label="Toggle Theme">
+          <span id="theme-toggle-icon" class="text-sm select-none">🌙</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ── Main Dashboard Container ── -->
+  <main class="max-w-6xl mx-auto p-4 md:p-8 flex flex-col gap-6">
+
+    <!-- ── Input & Report Setup Section ── -->
+    <section class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden flex flex-col">
+      <div class="flex items-center gap-2 border-b border-slate-100 pb-3 bg-slate-50/50 p-4 md:p-5">
+        <span class="text-lg">🗺️</span>
+        <h2 class="text-xs font-bold uppercase tracking-wider text-slate-500">
+          Constituency details & citizen contributions
+        </h2>
+      </div>
+
+      <div class="p-5 md:p-6 flex flex-col gap-6">
+        <!-- Location Form Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <label class="flex flex-col gap-1.5">
+            <span class="text-xs font-semibold text-slate-500">Constituency name</span>
+            <input
+              id="inp-con"
+              type="text"
+              placeholder="e.g. Sahibabad"
+              class="w-full bg-white border border-slate-200 rounded-xl py-2.5 px-3.5 text-sm focus:border-indigo-600 focus:ring-3 focus:ring-indigo-100 outline-none transition-all text-slate-900 font-medium"
+            />
+          </label>
+
+          <label class="flex flex-col gap-1.5">
+            <span class="text-xs font-semibold text-slate-500">District</span>
+            <input
+              id="inp-dis"
+              type="text"
+              placeholder="e.g. Ghaziabad"
+              class="w-full bg-white border border-slate-200 rounded-xl py-2.5 px-3.5 text-sm focus:border-indigo-600 focus:ring-3 focus:ring-indigo-100 outline-none transition-all text-slate-900 font-medium"
+            />
+          </label>
+
+          <label class="flex flex-col gap-1.5">
+            <span class="text-xs font-semibold text-slate-500">State</span>
+            <input
+              id="inp-st"
+              type="text"
+              placeholder="e.g. Uttar Pradesh"
+              class="w-full bg-white border border-slate-200 rounded-xl py-2.5 px-3.5 text-sm focus:border-indigo-600 focus:ring-3 focus:ring-indigo-100 outline-none transition-all text-slate-900 font-medium"
+            />
+          </label>
+        </div>
+
+        <!-- API keys config (Hidden because they are embedded in the backend) -->
+        <div class="hidden border-t border-slate-100 pt-5 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <label class="flex flex-col gap-1.5">
+            <span class="text-xs font-semibold text-slate-500 flex justify-between">
+              <span>OpenAQ Key</span>
+              <span class="text-[10px] text-slate-400 font-normal">Needed for live CPCB readings</span>
+            </span>
+            <input
+              id="inp-openaq"
+              type="password"
+              placeholder="Your OpenAQ key"
+              class="w-full bg-white border border-slate-200 rounded-xl py-2.5 px-3.5 text-sm focus:border-indigo-600 focus:ring-3 focus:ring-indigo-100 outline-none transition-all font-mono text-slate-900"
+            />
+            <span class="text-[10px] text-slate-400">
+              Get a free token at <a href="https://explore.openaq.org/register" target="_blank" class="text-indigo-600 hover:underline">explore.openaq.org/register</a>
+            </span>
+          </label>
+
+          <label class="flex flex-col gap-1.5">
+            <span class="text-xs font-semibold text-slate-500 flex justify-between">
+              <span>OpenRouter Key</span>
+              <span class="text-[10px] text-slate-400 font-normal">Please provide your OpenRouter API key</span>
+            </span>
+            <input
+              id="inp-openrouter"
+              type="password"
+              placeholder="Your OpenRouter key"
+              class="w-full bg-white border border-slate-200 rounded-xl py-2.5 px-3.5 text-sm focus:border-indigo-600 focus:ring-3 focus:ring-indigo-100 outline-none transition-all font-mono text-slate-900"
+            />
+            <span class="text-[10px] text-slate-400">
+              Please provide an OpenRouter API key to run scans.
+            </span>
+          </label>
+        </div>
+
+        <!-- ── Citizen Photo Upload Area ── -->
+        <div class="border-t border-slate-100 pt-5">
+          <span class="text-xs font-semibold text-slate-500 flex items-center gap-1.5 mb-2">
+            📷 Citizen Photo Contributions <span class="font-normal text-slate-400">(Optional)</span>
+          </span>
+          <div
+            id="drop-zone"
+            class="border-2 border-dashed border-slate-200 hover:border-indigo-400 bg-slate-50/20 rounded-2xl p-6 text-center transition-all cursor-pointer relative"
+          >
+            <input
+              id="file-input"
+              type="file"
+              multiple
+              accept="image/*"
+              class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+            />
+            <div class="text-3xl mb-2">📤</div>
+            <p class="text-sm font-semibold text-slate-600">Drop pollution photos here or click to upload</p>
+            <p class="text-xs text-slate-400 mt-1">Detects smoke chimneys, open solid-waste garbage fires, or diesel fumes</p>
+          </div>
+
+          <!-- Uploaded Photo Previews -->
+          <div id="photo-preview-container" class="hidden flex flex-wrap gap-2.5 mt-4"></div>
+        </div>
+
+        <!-- ── Actions Row ── -->
+        <div class="border-t border-slate-100 pt-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div class="flex flex-col sm:flex-row gap-2.5 w-full sm:w-auto">
+            <button
+              id="btn-scan"
+              class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl px-6 py-2.5 flex items-center justify-center gap-2 cursor-pointer transition-all shadow-sm shadow-indigo-100 active:scale-[0.98] disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed"
+            >
+              🚀 Run Multi-Agent Scan
+            </button>
+            <button
+              id="btn-test-openaq"
+              class="hidden bg-white hover:bg-slate-50 text-slate-600 border border-slate-200 text-sm font-semibold rounded-xl px-4 py-2.5 flex items-center justify-center gap-2 cursor-pointer transition-all shadow-xs"
+            >
+              🔌 Test OpenAQ API Key
+            </button>
+            <button
+              id="btn-test-openrouter"
+              class="hidden bg-white hover:bg-slate-50 text-slate-600 border border-slate-200 text-sm font-semibold rounded-xl px-4 py-2.5 flex items-center justify-center gap-2 cursor-pointer transition-all shadow-xs"
+            >
+              🔌 Test OpenRouter API Key
+            </button>
+          </div>
+          <div id="feedback-alert" class="hidden text-xs font-bold px-3 py-1.5 rounded-lg border"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Agent Pipeline Live Stream Animation ── -->
+    <section id="pipeline-stream" class="hidden bg-white border border-slate-200 rounded-2xl p-5 shadow-sm flex flex-col gap-4">
+      <div class="flex items-center gap-2 border-b border-slate-100 pb-3">
+        <span>⚙️</span>
+        <h2 class="text-xs font-bold uppercase tracking-wider text-slate-500">
+          Agent pipeline orchestration analytics
+        </h2>
+      </div>
+
+      <div class="grid grid-cols-2 md:grid-cols-6 gap-3">
+        <div id="agent-sensor" class="border border-slate-200 bg-slate-50/50 rounded-xl p-3 flex flex-col items-center justify-center text-center transition-all opacity-60">
+          <span class="text-2xl mb-1">📟</span>
+          <span class="text-[10px] font-bold text-slate-700">Sensor Agent</span>
+          <span class="agent-status text-[9px] font-bold px-2 py-0.5 rounded-md mt-1.5 bg-slate-200 text-slate-600">Standby</span>
+        </div>
+
+        <div id="agent-vision" class="border border-slate-200 bg-slate-50/50 rounded-xl p-3 flex flex-col items-center justify-center text-center transition-all opacity-60">
+          <span class="text-2xl mb-1">📷</span>
+          <span class="text-[10px] font-bold text-slate-700">Vision Agent</span>
+          <span class="agent-status text-[9px] font-bold px-2 py-0.5 rounded-md mt-1.5 bg-slate-200 text-slate-600">Standby</span>
+        </div>
+
+        <div id="agent-satellite" class="border border-slate-200 bg-slate-50/50 rounded-xl p-3 flex flex-col items-center justify-center text-center transition-all opacity-60">
+          <span class="text-2xl mb-1">🛰️</span>
+          <span class="text-[10px] font-bold text-slate-700">Satellite Agent</span>
+          <span class="agent-status text-[9px] font-bold px-2 py-0.5 rounded-md mt-1.5 bg-slate-200 text-slate-600">Standby</span>
+        </div>
+
+        <div id="agent-forecast" class="border border-slate-200 bg-slate-50/50 rounded-xl p-3 flex flex-col items-center justify-center text-center transition-all opacity-60">
+          <span class="text-2xl mb-1">📈</span>
+          <span class="text-[10px] font-bold text-slate-700">Forecast Agent</span>
+          <span class="agent-status text-[9px] font-bold px-2 py-0.5 rounded-md mt-1.5 bg-slate-200 text-slate-600">Standby</span>
+        </div>
+
+        <div id="agent-aggregator" class="border border-slate-200 bg-slate-50/50 rounded-xl p-3 flex flex-col items-center justify-center text-center transition-all opacity-60">
+          <span class="text-2xl mb-1">🧬</span>
+          <span class="text-[10px] font-bold text-slate-700">Aggregator</span>
+          <span class="agent-status text-[9px] font-bold px-2 py-0.5 rounded-md mt-1.5 bg-slate-200 text-slate-600">Standby</span>
+        </div>
+
+        <div id="agent-critique" class="border border-slate-200 bg-slate-50/50 rounded-xl p-3 flex flex-col items-center justify-center text-center transition-all opacity-60">
+          <span class="text-2xl mb-1">🔎</span>
+          <span class="text-[10px] font-bold text-slate-700">Critique QA</span>
+          <span class="agent-status text-[9px] font-bold px-2 py-0.5 rounded-md mt-1.5 bg-slate-200 text-slate-600">Standby</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Error Logs Panel ── -->
+    <div id="warning-panel" class="hidden bg-amber-50 border border-amber-200 p-4 rounded-2xl flex flex-col gap-1.5 text-xs text-amber-800 shadow-sm">
+      <span class="font-bold flex items-center gap-1.5">⚠️ Process notes & pipeline warnings:</span>
+      <ul id="warning-list" class="list-disc pl-4 flex flex-col gap-1"></ul>
+    </div>
+
+    <!-- ── Dashboard Results (Hidden by Default) ── -->
+    <div id="dashboard-results" class="hidden flex flex-col gap-6">
+      
+      <!-- ── Stats Overview Counters ── -->
+      <section class="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm text-center flex flex-col justify-center">
+          <span id="stat-critical" class="text-2xl font-black text-rose-600">0</span>
+          <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mt-1">🚨 Critical Risk</span>
+        </div>
+
+        <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm text-center flex flex-col justify-center">
+          <span id="stat-high" class="text-2xl font-black text-rose-500">0</span>
+          <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mt-1">🔥 High Risk</span>
+        </div>
+
+        <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm text-center flex flex-col justify-center">
+          <span id="stat-medium" class="text-2xl font-black text-amber-500">0</span>
+          <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mt-1">⚠️ Medium Risk</span>
+        </div>
+
+        <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm text-center flex flex-col justify-center">
+          <span id="stat-low" class="text-2xl font-black text-green-600">0</span>
+          <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mt-1">🌿 Low Risk</span>
+        </div>
+
+        <!-- Worst Hotspot Card -->
+        <div id="worst-hotspot-card" class="bg-white border-2 border-red-500 rounded-2xl p-4 shadow-md col-span-2 md:col-span-1 flex flex-col justify-between">
+          <div>
+            <span class="text-[9px] font-bold text-red-600 uppercase tracking-widest block">🔴 Worst Hotspot</span>
+            <h3 id="worst-zone-title" class="text-sm font-bold text-slate-900 truncate mt-1">-</h3>
+          </div>
+          <div class="text-[11px] text-slate-500 mt-2 border-t border-slate-100 pt-2 flex justify-between items-center font-mono">
+            <span>AQI: <b id="worst-zone-aqi" class="text-red-600">-</b></span>
+            <span>Score: <b id="worst-zone-score" class="text-slate-700">-</b></span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── Interactive Analytics Grid (Map + Side Panel) ── -->
+      <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Map Panel (Leaves 2 columns on large screens) -->
+        <div class="lg:col-span-2 flex flex-col gap-6">
+          <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-1 overflow-hidden relative">
+            <div class="absolute top-4 right-4 z-50 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-900 dark:text-slate-100 shadow-md flex items-center gap-1.5">
+              <span>📍</span> <span id="map-label-text">Regional Ground Monitor Map</span>
+            </div>
+            
+            <!-- Map Container -->
+            <div id="map" class="map-container"></div>
+          </div>
+
+          <!-- Dynamic Hotspot Details Card -->
+          <section id="hotspot-detail-box" class="hidden bg-white border border-slate-200 rounded-2xl p-5 md:p-6 shadow-sm flex flex-col gap-5">
+            <div class="flex items-center justify-between gap-4 border-b border-slate-100 pb-3">
+              <h3 id="detail-title" class="text-base font-bold text-slate-900 flex items-center gap-1.5 font-display">
+                -
+              </h3>
+              <span id="detail-risk" class="text-xs font-extrabold px-3 py-1 rounded-full border">
+                -
+              </span>
+            </div>
+
+            <!-- DYNAMIC POLLUTION REASON (NOT HARDCODED) -->
+            <div class="bg-amber-50/50 border-l-4 border-amber-600 p-4 rounded-r-xl text-xs leading-relaxed text-slate-900">
+              <span class="font-bold text-amber-800 flex items-center gap-1.5 mb-1">
+                🔍 Dynamic Pollution Cause Analysis
+              </span>
+              <p id="detail-reason" class="font-medium">-</p>
+            </div>
+
+            <!-- Parameters Grid -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
+              <div class="bg-slate-50 border border-slate-200 rounded-xl p-3">
+                <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">AQI</span>
+                <span id="detail-aqi" class="text-lg font-extrabold mt-1 block text-slate-800">-</span>
+              </div>
+              <div class="bg-slate-50 border border-slate-200 rounded-xl p-3">
+                <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Predicted Peak</span>
+                <span id="detail-peak" class="text-lg font-extrabold text-rose-600 mt-1 block">-</span>
+              </div>
+              <div class="bg-slate-50 border border-slate-200 rounded-xl p-3">
+                <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Primary Pollutant</span>
+                <span id="detail-pollutant" class="text-lg font-extrabold text-slate-900 mt-1 block">-</span>
+              </div>
+              <div class="bg-slate-50 border border-slate-200 rounded-xl p-3">
+                <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Aerosol Index</span>
+                <span id="detail-aerosol" class="text-lg font-extrabold text-indigo-600 mt-1 block">-</span>
+              </div>
+            </div>
+
+            <!-- Dispatch recommendations order -->
+            <div id="detail-dispatch-card" class="p-4 rounded-xl text-xs flex flex-col gap-1 border">
+              <span id="detail-dispatch-header" class="font-bold uppercase tracking-wider text-[10px]">
+                📋 Recommended Dispatch Action
+              </span>
+              <p id="detail-dispatch-body" class="text-slate-800 leading-relaxed font-semibold">-</p>
+            </div>
+
+            <!-- Badges and details footer -->
+            <div class="flex items-center justify-between flex-wrap gap-3">
+              <span id="detail-mobilize-badge" class="text-[10px] font-bold bg-slate-900 text-white rounded-lg px-2.5 py-1 uppercase tracking-wide">
+                -
+              </span>
+              <div id="detail-badges-container" class="flex gap-1.5 flex-wrap"></div>
+            </div>
+
+            <!-- Deploy Resources Button -->
+            <button
+              id="btn-deploy-resources"
+              class="w-full bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-extrabold text-xs uppercase tracking-widest py-3 px-4 rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-2 mt-2 border border-indigo-700 hover:scale-[1.01]"
+            >
+              🚀 DEPLOY RESOURCES TO THIS LOCATION
+            </button>
+          </section>
+
+          <!-- 24-Hour Forecast Graph -->
+          <section class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+            <div class="flex items-center gap-2 border-b border-slate-100 pb-3 mb-4">
+              <span class="text-sm">📊</span>
+              <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500">
+                24-Hour Air Quality Index (AQI) Forecast
+              </h3>
+            </div>
+            
+            <!-- Handcrafted SVG Graph -->
+            <div class="w-full overflow-x-auto">
+              <svg id="forecast-svg" class="w-full min-w-[500px]" height="150" viewBox="0 0 600 150" xmlns="http://www.w3.org/2000/svg"></svg>
+            </div>
+          </section>
+        </div>
+
+        <!-- Right Side Panel: Alerts & Hotspots Overview Selector -->
+        <div class="flex flex-col gap-6">
+          
+          <!-- Municipal Alerts Box with Matching Border Color (Fixes Alert priority visual matching) -->
+          <section class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm flex flex-col gap-4">
+            <div class="flex items-center gap-2 border-b border-slate-100 pb-3">
+              <span class="text-red-500">🚨</span>
+              <h2 class="text-xs font-bold uppercase tracking-wider text-slate-500">
+                Municipal dispatch orders
+              </h2>
+            </div>
+            <div id="alerts-list-container" class="flex flex-col gap-3"></div>
+          </section>
+
+          <!-- Hotspots Overview Selector List -->
+          <section class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm flex flex-col gap-4">
+            <div class="flex items-center gap-2 border-b border-slate-100 pb-2">
+              <span class="text-sm">🎯</span>
+              <h2 class="text-xs font-bold uppercase tracking-wider text-slate-500">
+                Hotspots overview
+              </h2>
+            </div>
+            <div id="hotspots-list" class="flex flex-col gap-2"></div>
+          </section>
+        </div>
+      </section>
+
+      <!-- ── Critique QA Audit Verification Briefing ── -->
+      <section class="bg-slate-100 border border-slate-200 rounded-2xl p-5 shadow-inner flex flex-col gap-3">
+        <div class="flex items-center gap-2 border-b border-slate-200 pb-3">
+          <span class="text-slate-500">🔎</span>
+          <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500">
+            Critique Agent Audit Verification
+          </h3>
+        </div>
+        <p id="audit-summary-text" class="text-xs text-slate-600 leading-relaxed font-medium">
+          Audit review standby.
+        </p>
+        <div class="flex gap-4 border-t border-slate-200 pt-3 text-[10px] font-bold">
+          <span id="audit-evidence-photos" class="text-slate-400">📷 0 active citizen photo inputs</span>
+          <span id="audit-evidence-sensors" class="text-slate-400">✓ 0 active ground sensor inputs</span>
+        </div>
+      </section>
+
+    </div>
+
+  </main>
+
+  <!-- ── Footer ── -->
+  <footer class="max-w-6xl mx-auto mt-12 border-t border-slate-200 py-6 px-4 flex flex-col md:flex-row justify-between items-center gap-4 text-[11px] text-slate-400">
+    <span>Data Ingested: OpenAQ CPCB, Leaflet OpenStreetMap, Multi-Agent LangChain/LangGraph workflow</span>
+    <span>PollutionWatch v3.0 • Powered by Flask & Python</span>
+  </footer>
+
+  <!-- ── Dashboard Scripts & Interactions ── -->
+  <script>
+    // State values
+    let uploadedPhotos = [];
+    let scanResults = null;
+    let selectedHotspotId = null;
+    window.deployedHotspots = new Set();
+    let map = null;
+    let markersLayer = null;
+
+    // Mapping of resource codes to human labels
+    const RESOURCE_LABELS = {
+      water_mist_cannon: "💦 Water Mist Cannon",
+      cleanup_crew: "🧹 Waste Cleanup Patrol",
+      factory_notice: "🏭 Factory Compliance Notice",
+      traffic_diversion: "🚦 Traffic Divert Patrol",
+      monitoring_van: "🚐 Mobile Sensor Drone",
+    };
+
+    const RISK_COLORS = {
+      CRITICAL: "#dc2626", // red-600
+      HIGH: "#f43f5e",     // rose-500
+      MEDIUM: "#d97706",   // amber-600
+      LOW: "#16a34a",      // green-600
+    };
+
+    const RISK_EMOJIS = {
+      CRITICAL: "🔴 CRITICAL",
+      HIGH: "🔥 HIGH",
+      MEDIUM: "⚠️ MEDIUM",
+      LOW: "🌿 LOW",
+    };
+
+    // Initialize Leaflet Map
+    function initMap(lat, lon, label) {
+      if (map) {
+        map.remove();
+      }
+      
+      map = L.map('map').setView([lat, lon], 12);
+      
+      // Load OpenStreetMap Tiles
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+      }).addTo(map);
+
+      markersLayer = L.layerGroup().addTo(map);
+
+      // Add a center home marker
+      L.marker([lat, lon]).addTo(map)
+        .bindPopup(`<b>Center</b><br>${label}`)
+        .openPopup();
+    }
+
+    // Add Hotspot markers to Leaflet Map
+    function updateMapMarkers(hotspots) {
+      if (!markersLayer) return;
+      markersLayer.clearLayers();
+
+      hotspots.forEach(h => {
+        const markerClass = `custom-marker-${h.risk_tier.toLowerCase()}`;
+        
+        // Define beautiful leaflet div icon with matching colors
+        const icon = L.divIcon({
+          className: 'custom-div-icon',
+          html: `<div class="w-4 h-4 rounded-full ${h.risk_tier === 'CRITICAL' ? 'bg-red-600 animate-ping absolute' : ''}"></div>
+                 <div class="w-4 h-4 rounded-full border-2 border-white shadow-md relative z-10" style="background-color: ${RISK_COLORS[h.risk_tier]}"></div>`,
+          iconSize: [16, 16],
+          iconAnchor: [8, 8]
+        });
+
+        const marker = L.marker([h.lat, h.lon], { icon: icon })
+          .addTo(markersLayer)
+          .bindPopup(`<b>${h.zone}</b><br>AQI: ${h.aqi}<br>Risk: ${h.risk_tier}`);
+
+        marker.on('click', () => {
+          selectHotspot(h.id);
+        });
+      });
+    }
+
+    // Drag-and-drop & manual photo uploading
+    const dropZone = document.getElementById("drop-zone");
+    const fileInput = document.getElementById("file-input");
+    const previewContainer = document.getElementById("photo-preview-container");
+
+    dropZone.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      dropZone.classList.add("border-indigo-600", "bg-indigo-50/20");
+    });
+
+    dropZone.addEventListener("dragleave", () => {
+      dropZone.classList.remove("border-indigo-600", "bg-indigo-50/20");
+    });
+
+    dropZone.addEventListener("drop", (e) => {
+      e.preventDefault();
+      dropZone.classList.remove("border-indigo-600", "bg-indigo-50/20");
+      if (e.dataTransfer.files.length > 0) {
+        uploadFiles(e.dataTransfer.files);
+      }
+    });
+
+    fileInput.addEventListener("change", () => {
+      if (fileInput.files.length > 0) {
+        uploadFiles(fileInput.files);
+      }
+    });
+
+    function uploadFiles(files) {
+      Array.from(files).forEach(file => {
+        const formData = new FormData();
+        formData.append("photo", file);
+
+        fetch("/api/upload", {
+          method: "POST",
+          body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+          if (data.ok) {
+            uploadedPhotos.push({ name: file.name, path: data.path });
+            renderPreviews();
+          } else {
+            showFeedback(data.error || "Upload failed", false);
+          }
+        })
+        .catch(err => {
+          showFeedback("Upload failed: " + err, false);
+        });
+      });
+    }
+
+    function removePhoto(idx) {
+      uploadedPhotos.splice(idx, 1);
+      renderPreviews();
+    }
+
+    function renderPreviews() {
+      if (uploadedPhotos.length === 0) {
+        previewContainer.classList.add("hidden");
+        return;
+      }
+      previewContainer.classList.remove("hidden");
+      previewContainer.innerHTML = "";
+
+      uploadedPhotos.forEach((photo, idx) => {
+        const div = document.createElement("div");
+        div.className = "flex items-center gap-2.5 bg-slate-50 border border-slate-200 rounded-xl p-2 pr-3 text-xs";
+        div.innerHTML = `
+          <div class="w-10 h-10 bg-slate-200 rounded-lg overflow-hidden shadow-xs">
+            <img src="${photo.path}" class="w-full h-full object-cover" />
+          </div>
+          <div class="flex flex-col max-w-[120px] truncate">
+            <span class="font-semibold text-slate-700 truncate">${photo.name}</span>
+            <span class="text-[10px] text-green-600 font-medium">✓ Ingested</span>
+          </div>
+          <button onclick="removePhoto(${idx})" class="p-1 hover:bg-slate-200 rounded-lg text-rose-600 ml-1 transition-all">
+            🗑️
+          </button>
+        `;
+        previewContainer.appendChild(div);
+      });
+    }
+
+    // Display toast feedback alert
+    function showFeedback(msg, isSuccess) {
+      const alert = document.getElementById("feedback-alert");
+      alert.classList.remove("hidden", "bg-green-50", "text-green-700", "border-green-100", "bg-rose-50", "text-rose-700", "border-rose-100");
+      if (isSuccess) {
+        alert.classList.add("bg-green-50", "text-green-700", "border-green-100");
+      } else {
+        alert.classList.add("bg-rose-50", "text-rose-700", "border-rose-100");
+      }
+      alert.innerHTML = msg;
+      alert.classList.remove("hidden");
+      setTimeout(() => alert.classList.add("hidden"), 6000);
+    }
+
+    // Test OpenAQ Key Button
+    document.getElementById("btn-test-openaq").addEventListener("click", () => {
+      const key = document.getElementById("inp-openaq").value;
+      if (!key) {
+        showFeedback("Please enter an OpenAQ API key first", false);
+        return;
+      }
+
+      const btn = document.getElementById("btn-test-openaq");
+      btn.disabled = true;
+      btn.innerHTML = "Testing Connection...";
+
+      fetch("/api/test-openaq", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ openaq_key: key })
+      })
+      .then(res => res.json())
+      .then(data => {
+        btn.disabled = false;
+        btn.innerHTML = "🔌 Test OpenAQ API Key";
+        if (data.ok) {
+          showFeedback(data.message, true);
+        } else {
+          showFeedback(data.error, false);
+        }
+      })
+      .catch(err => {
+        btn.disabled = false;
+        btn.innerHTML = "🔌 Test OpenAQ API Key";
+        showFeedback("Connection failed: " + err, false);
+      });
+    });
+
+    // Test OpenRouter Key Button
+    document.getElementById("btn-test-openrouter").addEventListener("click", () => {
+      const key = document.getElementById("inp-openrouter").value;
+      if (!key) {
+        showFeedback("Please enter an OpenRouter API key first", false);
+        return;
+      }
+
+      const btn = document.getElementById("btn-test-openrouter");
+      btn.disabled = true;
+      btn.innerHTML = "Testing Connection...";
+
+      fetch("/api/test-openrouter", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ openrouter_key: key })
+      })
+      .then(res => res.json())
+      .then(data => {
+        btn.disabled = false;
+        btn.innerHTML = "🔌 Test OpenRouter API Key";
+        if (data.ok) {
+          showFeedback(data.message, true);
+        } else {
+          showFeedback(data.error, false);
+        }
+      })
+      .catch(err => {
+        btn.disabled = false;
+        btn.innerHTML = "🔌 Test OpenRouter API Key";
+        showFeedback("Connection failed: " + err, false);
+      });
+    });
+
+    function isGibberish(text) {
+      if (!text) return true;
+      const val = text.trim().toLowerCase();
+      
+      if (val.length < 3) {
+        if (val === "goa") return false;
+        return true;
+      }
+      
+      const vowels = "aeiouy";
+      let streak = 0;
+      let maxStreak = 0;
+      for (let i = 0; i < val.length; i++) {
+        const char = val[i];
+        if (char >= 'a' && char <= 'z') {
+          if (!vowels.includes(char)) {
+            streak++;
+            if (streak > maxStreak) maxStreak = streak;
+          } else {
+            streak = 0;
+          }
+        } else {
+          streak = 0;
+        }
+      }
+      
+      if (maxStreak >= 5) return true;
+      
+      let hasVowel = false;
+      for (let i = 0; i < val.length; i++) {
+        if (vowels.includes(val[i])) {
+          hasVowel = true;
+          break;
+        }
+      }
+      if (!hasVowel && val.length >= 4) return true;
+      
+      if (val.length >= 4) {
+        for (let i = 0; i < val.length - 3; i++) {
+          if (val[i] === val[i+1] && val[i] === val[i+2] && val[i] === val[i+3]) {
+            return true;
+          }
+        }
+      }
+      
+      const uniqueChars = new Set(val).size;
+      if (val.length >= 6 && uniqueChars <= 2) return true;
+      
+      const regex = /^[a-zA-Z0-9\s\-\.\'\,\(\)]+$/;
+      if (!regex.test(val)) return true;
+      
+      return false;
+    }
+
+    // Run Multi-Agent Scan
+    document.getElementById("btn-scan").addEventListener("click", () => {
+      const con = document.getElementById("inp-con").value.trim();
+      const dis = document.getElementById("inp-dis").value.trim();
+      const st = document.getElementById("inp-st").value.trim();
+      const openaq = document.getElementById("inp-openaq").value.trim();
+      const openrouter = document.getElementById("inp-openrouter").value.trim();
+
+      if (!con || !dis || !st) {
+        showFeedback("⚠️ Constituency, District, and State are required inputs", false);
+        return;
+      }
+
+      if (isGibberish(con) || isGibberish(dis) || isGibberish(st)) {
+        showFeedback("enter a valid constituency name, district,state", false);
+        return;
+      }
+
+      // Hide results first
+      document.getElementById("dashboard-results").classList.add("hidden");
+      document.getElementById("warning-panel").classList.add("hidden");
+
+      // Set up streaming animation states
+      const stream = document.getElementById("pipeline-stream");
+      stream.classList.remove("hidden");
+      resetAgentIndicatorStates();
+
+      const btn = document.getElementById("btn-scan");
+      btn.disabled = true;
+      btn.innerHTML = "🌀 Processing Pipeline...";
+
+      // Trigger sequential Agent animation highlights
+      animateAgentsSequentially(() => {
+        // Now fire the real backend Flask fetch
+        fetch("/api/scan", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            constituency: con,
+            district: dis,
+            state: st,
+            openaq_key: openaq,
+            openrouter_key: openrouter,
+            photo_paths: uploadedPhotos.map(p => p.path)
+          })
+        })
+        .then(res => res.json())
+        .then(data => {
+          btn.disabled = false;
+          btn.innerHTML = "🚀 Run Multi-Agent Scan";
+
+          if (data.error) {
+            if (data.error.includes("enter a valid constituency name")) {
+              showFeedback(data.error, false);
+            } else {
+              showFeedback("Pipeline Error: " + data.error, false);
+            }
+            resetAgentIndicatorStates();
+            return;
+          }
+
+          // Complete pipeline state
+          setAgentState("agent-critique", "Finished", "bg-green-600 text-white");
+
+          if (window.deployedHotspots) window.deployedHotspots.clear();
+          scanResults = data;
+          selectedHotspotId = data.hotspots && data.hotspots.length > 0 ? data.hotspots[0].id : null;
+
+          renderDashboard();
+        })
+        .catch(err => {
+          btn.disabled = false;
+          btn.innerHTML = "🚀 Run Multi-Agent Scan";
+          showFeedback("Execution failed: " + err, false);
+        });
+      });
+    });
+
+    // Reset pipeline statuses
+    function resetAgentIndicatorStates() {
+      const agents = ["agent-sensor", "agent-vision", "agent-satellite", "agent-forecast", "agent-aggregator", "agent-critique"];
+      agents.forEach(id => {
+        const card = document.getElementById(id);
+        card.className = "border border-slate-200 bg-slate-50/50 rounded-xl p-3 flex flex-col items-center justify-center text-center transition-all opacity-60";
+        const badge = card.querySelector(".agent-status");
+        badge.className = "agent-status text-[9px] font-bold px-2 py-0.5 rounded-md mt-1.5 bg-slate-200 text-slate-600";
+        badge.innerHTML = "Standby";
+      });
+    }
+
+    function setAgentState(id, text, bgClasses) {
+      const card = document.getElementById(id);
+      card.classList.remove("opacity-60");
+      card.classList.add("opacity-100", "border-indigo-600", "bg-indigo-50/30");
+      const badge = card.querySelector(".agent-status");
+      badge.className = `agent-status text-[9px] font-bold px-2 py-0.5 rounded-md mt-1.5 ${bgClasses}`;
+      badge.innerHTML = text;
+    }
+
+    // Sequence stream visualization
+    function animateAgentsSequentially(callback) {
+      setTimeout(() => {
+        setAgentState("agent-sensor", "Active", "bg-indigo-600 text-white animate-pulse");
+        setTimeout(() => {
+          setAgentState("agent-sensor", "Finished", "bg-green-600 text-white");
+          setAgentState("agent-vision", "Active", "bg-indigo-600 text-white animate-pulse");
+          setTimeout(() => {
+            setAgentState("agent-vision", "Finished", "bg-green-600 text-white");
+            setAgentState("agent-satellite", "Active", "bg-indigo-600 text-white animate-pulse");
+            setTimeout(() => {
+              setAgentState("agent-satellite", "Finished", "bg-green-600 text-white");
+              setAgentState("agent-forecast", "Active", "bg-indigo-600 text-white animate-pulse");
+              setTimeout(() => {
+                setAgentState("agent-forecast", "Finished", "bg-green-600 text-white");
+                setAgentState("agent-aggregator", "Active", "bg-indigo-600 text-white animate-pulse");
+                setTimeout(() => {
+                  setAgentState("agent-aggregator", "Finished", "bg-green-600 text-white");
+                  setAgentState("agent-critique", "Active", "bg-indigo-600 text-white animate-pulse");
+                  callback();
+                }, 750);
+              }, 750);
+            }, 750);
+          }, 750);
+        }, 750);
+      }, 200);
+    }
+
+    // Redraw and render full dashboard results
+    function renderDashboard() {
+      if (!scanResults) return;
+
+      const con = scanResults.constituency;
+      const dis = scanResults.district;
+      const st = scanResults.state;
+
+      // Show header pill
+      const pill = document.getElementById("location-pill");
+      pill.classList.remove("hidden");
+      document.getElementById("pill-text").innerHTML = `📍 ${con}, ${dis}`;
+      document.getElementById("map-label-text").innerHTML = `Ground Sensor Stations inside ${dis}`;
+
+      // Update Warnings panel
+      const warningsList = document.getElementById("warning-list");
+      warningsList.innerHTML = "";
+      if (scanResults.errors && scanResults.errors.length > 0) {
+        document.getElementById("warning-panel").classList.remove("hidden");
+        scanResults.errors.forEach(err => {
+          const li = document.createElement("li");
+          li.className = "leading-relaxed";
+          li.innerHTML = err;
+          warningsList.appendChild(li);
+        });
+      }
+
+      // Counts by tier
+      const hotspots = scanResults.hotspots || [];
+      const stats = { CRITICAL: 0, HIGH: 0, MEDIUM: 0, LOW: 0 };
+      hotspots.forEach(h => {
+        if (stats[h.risk_tier] !== undefined) {
+          stats[h.risk_tier]++;
+        }
+      });
+
+      document.getElementById("stat-critical").innerHTML = stats.CRITICAL;
+      document.getElementById("stat-high").innerHTML = stats.HIGH;
+      document.getElementById("stat-medium").innerHTML = stats.MEDIUM;
+      document.getElementById("stat-low").innerHTML = stats.LOW;
+
+      // Set worst hotspot card
+      let worst = null;
+      hotspots.forEach(h => {
+        if (!worst || h.composite_risk_score > worst.composite_risk_score) {
+          worst = h;
+        }
+      });
+
+      if (worst) {
+        document.getElementById("worst-hotspot-card").classList.remove("hidden");
+        document.getElementById("worst-zone-title").innerHTML = worst.zone;
+        document.getElementById("worst-zone-aqi").innerHTML = worst.aqi;
+        document.getElementById("worst-zone-score").innerHTML = worst.composite_risk_score;
+      } else {
+        document.getElementById("worst-hotspot-card").classList.add("hidden");
+      }
+
+      // Initialize OSM Leaflet Map
+      // Center map around worst hotspot if possible, else default geocoded center
+      const centerLat = worst ? worst.lat : 28.6139;
+      const centerLon = worst ? worst.lon : 77.2090;
+      initMap(centerLat, centerLon, `${con}, ${dis}`);
+      updateMapMarkers(hotspots);
+
+      // Render alerts with FULL border color matching priorities! (Fixes alert border priority issue)
+      renderAlertsList(scanResults.municipal_alerts || []);
+
+      // Render hotspots Overview List
+      renderHotspotsList(hotspots);
+
+      // Select first hotspot details
+      if (selectedHotspotId) {
+        selectHotspot(selectedHotspotId);
+      }
+
+      // Render Forecast Chart
+      renderForecastSvg(scanResults.forecast_chart || []);
+
+      // Render QA audit briefing
+      document.getElementById("audit-summary-text").innerHTML = scanResults.audit_summary;
+      document.getElementById("audit-evidence-photos").innerHTML = `📷 ${scanResults.photo_count || 0} active citizen photo inputs`;
+      document.getElementById("audit-evidence-sensors").innerHTML = `✓ ${scanResults.sensor_count || 0} active ground sensor inputs`;
+
+      // Show full dashboard results
+      document.getElementById("dashboard-results").classList.remove("hidden");
+    }
+
+    // Render alerts list ensuring full border is priority matching!
+    function renderAlertsList(alerts) {
+      const container = document.getElementById("alerts-list-container");
+      container.innerHTML = "";
+
+      if (alerts.length === 0) {
+        container.innerHTML = `<p class="text-xs text-slate-400 text-center py-4 font-semibold">No municipal alerts dispatched</p>`;
+        return;
+      }
+
+      const isDark = document.documentElement.classList.contains("dark");
+
+      alerts.forEach(alert => {
+        const isUrgent = alert.priority === 1;
+        // Priority full border styling (Fixes requirement 4: alerts box border matches priority side color)
+        const borderColor = isUrgent 
+          ? (isDark ? "#ef4444" : "#dc2626") 
+          : (isDark ? "#f59e0b" : "#d97706");
+        const bgColor = isUrgent 
+          ? (isDark ? "rgba(239, 68, 68, 0.15)" : "#fef2f2") 
+          : (isDark ? "rgba(245, 158, 11, 0.15)" : "#fef3c7");
+        const badgeColor = isUrgent ? "bg-red-600 dark:bg-red-700" : "bg-amber-600 dark:bg-amber-700";
+        const badgeLabel = isUrgent ? "CRITICAL DISPATCH" : "PRIORITY 2";
+
+        const div = document.createElement("div");
+        div.className = "p-3.5 rounded-xl flex flex-col gap-2 transition-all shadow-xs";
+        div.style.border = `2px solid ${borderColor}`;
+        div.style.backgroundColor = bgColor;
+
+        div.innerHTML = `
+          <div class="flex justify-between items-center gap-2">
+            <span class="font-bold text-xs text-slate-900 dark:text-slate-100 truncate">📍 ${alert.zone}</span>
+            <span class="text-[8px] font-extrabold text-white px-2 py-0.5 rounded-full ${badgeColor}">
+              ${badgeLabel}
+            </span>
+          </div>
+          <p class="text-xs text-slate-900 dark:text-slate-100 font-bold leading-relaxed">
+            ${RESOURCE_LABELS[alert.resource_type] || alert.resource_type}: ${alert.action}
+          </p>
+          <div class="text-[10px] text-slate-500 dark:text-slate-400 flex items-center gap-1 font-semibold border-t border-slate-950/5 dark:border-white/10 pt-1.5 mt-0.5">
+            ⏱️ Response within ${alert.estimated_response_minutes} minutes
+          </div>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    // Render hotspots overview cards
+    function renderHotspotsList(hotspots) {
+      const container = document.getElementById("hotspots-list");
+      container.innerHTML = "";
+
+      hotspots.forEach(h => {
+        const isSelected = h.id === selectedHotspotId;
+        const color = RISK_COLORS[h.risk_tier];
+        const bg = isSelected ? "border-indigo-600 bg-indigo-50/60" : "border-slate-200 hover:border-slate-400 bg-white";
+        
+        const div = document.createElement("div");
+        div.className = `border rounded-xl p-3.5 cursor-pointer transition-all flex flex-col gap-2 ${bg}`;
+        div.onclick = () => selectHotspot(h.id);
+
+        const isDeployed = window.deployedHotspots && window.deployedHotspots.has(h.id);
+        const deployBtnHtml = isDeployed 
+          ? `<span class="bg-emerald-50 text-emerald-700 text-[10px] font-extrabold px-3 py-1.5 rounded-lg border border-emerald-200 shadow-2xs flex items-center gap-1">✅ Deployed</span>`
+          : `<button 
+              onclick="event.stopPropagation(); window.deployResources('${h.id}');"
+              class="bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white text-[10px] font-bold px-3 py-1.5 rounded-lg transition-all cursor-pointer shadow-xs border border-indigo-700 hover:scale-105"
+            >
+              🚀 Deploy
+            </button>`;
+
+        div.innerHTML = `
+          <div class="flex justify-between items-start gap-2">
+            <div class="flex flex-col min-w-0">
+              <span class="font-bold text-xs text-slate-900 truncate">${h.zone}</span>
+              <span class="text-[10px] font-bold text-indigo-600 mt-0.5 font-mono">💨 AQI: ${h.aqi || '-'} (${h.primary_pollutant || 'PM2.5'})</span>
+            </div>
+            <span class="text-[9px] font-extrabold px-2 py-0.5 rounded-full border shrink-0" style="color: ${color}; border-color: ${color}30; background-color: ${color}05">
+              ${RISK_EMOJIS[h.risk_tier]} (Score: ${h.composite_risk_score})
+            </span>
+          </div>
+          <!-- SPECIFIC DYNAMIC POLLUTION REASON -->
+          <p class="text-[11px] text-slate-600 line-clamp-2 leading-relaxed font-semibold">
+            🔍 ${h.pollution_reason}
+          </p>
+          <div class="flex justify-between items-center text-[10px] text-slate-400 border-t border-slate-100 pt-2 mt-1">
+            <span class="font-bold text-slate-500">${RESOURCE_LABELS[h.municipal_resource] || h.municipal_resource}</span>
+            ${deployBtnHtml}
+          </div>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    // Select Hotspot and show side details
+    function selectHotspot(id) {
+      selectedHotspotId = id;
+      const hotspots = scanResults.hotspots || [];
+      const h = hotspots.find(item => item.id === id);
+      if (!h) return;
+
+      // Update selection highlights on Overview list
+      renderHotspotsList(hotspots);
+
+      // Open popup on map
+      if (markersLayer) {
+        markersLayer.eachLayer(marker => {
+          if (marker.getLatLng().lat === h.lat && marker.getLatLng().lng === h.lon) {
+            marker.openPopup();
+            map.setView([h.lat, h.lon], 13);
+          }
+        });
+      }
+
+      const box = document.getElementById("hotspot-detail-box");
+      box.classList.remove("hidden");
+
+      document.getElementById("detail-title").innerHTML = `📍 ${h.zone}`;
+      
+      const riskBadge = document.getElementById("detail-risk");
+      const riskColor = RISK_COLORS[h.risk_tier];
+      riskBadge.innerHTML = `${RISK_EMOJIS[h.risk_tier]} · Risk Score: ${h.composite_risk_score}`;
+      riskBadge.style.color = riskColor;
+      riskBadge.style.borderColor = `${riskColor}30`;
+      riskBadge.style.backgroundColor = `${riskColor}08`;
+
+      // SPECIFIC REASON (DYNAMIC / GENERATED BY LLM)
+      document.getElementById("detail-reason").innerHTML = h.pollution_reason;
+
+      document.getElementById("detail-aqi").innerHTML = h.aqi;
+      document.getElementById("detail-aqi").style.color = riskColor;
+      document.getElementById("detail-peak").innerHTML = h.predicted_peak_aqi;
+      document.getElementById("detail-pollutant").innerHTML = h.primary_pollutant;
+      document.getElementById("detail-aerosol").innerHTML = h.aerosol_index.toFixed(1) + " AI";
+
+      // Dispatch details box
+      const dispatchCard = document.getElementById("detail-dispatch-card");
+      dispatchCard.style.backgroundColor = `${riskColor}03`;
+      dispatchCard.style.borderColor = `${riskColor}15`;
+      document.getElementById("detail-dispatch-header").style.color = riskColor;
+      document.getElementById("detail-dispatch-body").innerHTML = h.recommended_action;
+
+      document.getElementById("detail-mobilize-badge").innerHTML = RESOURCE_LABELS[h.municipal_resource] || h.municipal_resource;
+
+      // Evidence badges
+      const badgesContainer = document.getElementById("detail-badges-container");
+      badgesContainer.innerHTML = "";
+
+      h.pollution_types.forEach(t => {
+        const span = document.createElement("span");
+        span.className = "text-[10px] bg-slate-100 border border-slate-200 text-slate-600 rounded-md px-2 py-0.5 uppercase tracking-wide font-medium";
+        span.innerHTML = t;
+        badgesContainer.appendChild(span);
+      });
+
+      h.evidence_sources.forEach(src => {
+        const span = document.createElement("span");
+        if (src === "vision") {
+          span.className = "text-[10px] border border-rose-200 bg-rose-50 text-rose-600 rounded-md px-2 py-0.5 uppercase tracking-wide font-bold";
+          span.innerHTML = "📷 vision";
+        } else {
+          span.className = "text-[10px] border border-indigo-200 bg-indigo-50 text-indigo-600 rounded-md px-2 py-0.5 uppercase tracking-wide font-semibold";
+          span.innerHTML = src;
+        }
+        badgesContainer.appendChild(span);
+      });
+
+      // Sync the side details deploy button label and style based on deployment status
+      const isDeployed = window.deployedHotspots && window.deployedHotspots.has(h.id);
+      const mainDeployBtn = document.getElementById("btn-deploy-resources");
+      if (mainDeployBtn) {
+        if (isDeployed) {
+          mainDeployBtn.innerHTML = "✅ Resources Deployed Successfully";
+          mainDeployBtn.className = "w-full bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-extrabold text-xs uppercase tracking-widest py-3 px-4 rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-2 mt-2 border border-emerald-700";
+        } else {
+          mainDeployBtn.innerHTML = "🚀 DEPLOY RESOURCES TO THIS LOCATION";
+          mainDeployBtn.className = "w-full bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-extrabold text-xs uppercase tracking-widest py-3 px-4 rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-2 mt-2 border border-indigo-700 hover:scale-[1.01]";
+        }
+      }
+    }
+
+    // Show a beautiful, floating notification toast for deployment success
+    function showFloatingToast(message) {
+      let container = document.getElementById("toast-container");
+      if (!container) {
+        container = document.createElement("div");
+        container.id = "toast-container";
+        container.className = "fixed top-6 right-6 z-[9999] flex flex-col gap-3 pointer-events-none max-w-sm w-full";
+        document.body.appendChild(container);
+      }
+      
+      const toast = document.createElement("div");
+      toast.className = "pointer-events-auto bg-slate-900 text-white text-xs font-semibold px-4 py-3.5 rounded-xl shadow-xl border border-slate-800 flex items-center gap-3 transition-all duration-300 opacity-0 transform translate-y-2";
+      toast.innerHTML = `
+        <span class="text-base">🚀</span>
+        <div class="flex-1">
+          <p class="font-extrabold text-white text-[13px] tracking-wide uppercase">Resources Deployed</p>
+          <p class="text-slate-300 text-[11px] font-medium mt-0.5">${message}</p>
+        </div>
+      `;
+      container.appendChild(toast);
+      
+      // Trigger slide-in/fade-in
+      setTimeout(() => {
+        toast.classList.remove("opacity-0", "translate-y-2");
+        toast.classList.add("opacity-100", "translate-y-0");
+      }, 50);
+      
+      // Remove toast after 5 seconds
+      setTimeout(() => {
+        toast.classList.remove("opacity-100", "translate-y-0");
+        toast.classList.add("opacity-0", "translate-y-[-10px]");
+        setTimeout(() => toast.remove(), 300);
+      }, 5000);
+    }
+
+    // Deploy resources to the designated place
+    window.deployResources = function(id) {
+      if (!scanResults || !scanResults.hotspots) {
+        showFeedback("⚠️ No active hotspots scan results to deploy to", false);
+        return;
+      }
+      const hotspots = scanResults.hotspots || [];
+      const h = hotspots.find(item => item.id === id);
+      if (!h) {
+        showFeedback("⚠️ Hotspot details not found", false);
+        return;
+      }
+
+      // Add to deployed tracker
+      window.deployedHotspots = window.deployedHotspots || new Set();
+      window.deployedHotspots.add(id);
+
+      const resourceLabel = RESOURCE_LABELS[h.municipal_resource] || h.municipal_resource;
+      
+      // Standard feedback banner
+      showFeedback(`🚀 <strong>Resources Deployed Successfully!</strong> Dispatched <strong>${resourceLabel}</strong> to <strong>${h.zone}</strong>.<br/><span class="text-[11px] font-medium opacity-90">Action: ${h.recommended_action}</span>`, true);
+      
+      // Floating alert toast
+      showFloatingToast(`Dispatched ${resourceLabel} to ${h.zone}.`);
+
+      // Re-render the hotspots list to update badge states
+      renderHotspotsList(hotspots);
+
+      // Sync active detail card's deploy button
+      const mainDeployBtn = document.getElementById("btn-deploy-resources");
+      if (mainDeployBtn) {
+        mainDeployBtn.innerHTML = "✅ Resources Deployed Successfully";
+        mainDeployBtn.className = "w-full bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-extrabold text-xs uppercase tracking-widest py-3 px-4 rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-2 mt-2 border border-emerald-700";
+      }
+    };
+
+    document.getElementById("btn-deploy-resources").addEventListener("click", () => {
+      if (selectedHotspotId) {
+        window.deployResources(selectedHotspotId);
+      } else {
+        showFeedback("⚠️ Please select a hotspot from the list first", false);
+      }
+    });
+
+    // Render forecast SVG chart
+    function renderForecastSvg(chart) {
+      const svg = document.getElementById("forecast-svg");
+      svg.innerHTML = "";
+
+      if (chart.length === 0) return;
+
+      const padding = 20;
+      const height = 150;
+      const width = 600;
+      const graphWidth = width - padding * 2;
+      const graphHeight = height - padding * 2;
+
+      // Find max/min AQI to scale appropriately
+      const aqis = chart.map(c => c.aqi);
+      const maxAqi = Math.max(...aqis, 150);
+      const minAqi = Math.min(...aqis, 0);
+      const range = maxAqi - minAqi;
+
+      // Calculate path points
+      const points = chart.map((c, idx) => {
+        const x = padding + (idx / 23) * graphWidth;
+        const y = height - padding - ((c.aqi - minAqi) / range) * graphHeight;
+        return { x, y, ...c };
+      });
+
+      // Find Peak Node
+      let peakIndex = 0;
+      points.forEach((pt, idx) => {
+        if (pt.aqi > points[peakIndex].aqi) {
+          peakIndex = idx;
+        }
+      });
+      const peak = points[peakIndex];
+
+      // Draw Gradient fill path
+      let fillPathData = `M ${points[0].x} ${height - padding} `;
+      points.forEach(pt => {
+        fillPathData += `L ${pt.x} ${pt.y} `;
+      });
+      fillPathData += `L ${points[points.length - 1].x} ${height - padding} Z`;
+
+      const fillPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      fillPath.setAttribute("d", fillPathData);
+      fillPath.setAttribute("fill", "url(#chart-gradient)");
+      fillPath.setAttribute("opacity", "0.1");
+      svg.appendChild(fillPath);
+
+      // Draw Main Line path
+      let linePathData = `M ${points[0].x} ${points[0].y} `;
+      for (let i = 1; i < points.length; i++) {
+        linePathData += `L ${points[i].x} ${points[i].y} `;
+      }
+
+      const linePath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      linePath.setAttribute("d", linePathData);
+      linePath.setAttribute("fill", "none");
+      linePath.setAttribute("stroke", "#4f46e5");
+      linePath.setAttribute("stroke-width", "2.5");
+      linePath.setAttribute("stroke-linecap", "round");
+      linePath.setAttribute("stroke-linejoin", "round");
+      svg.appendChild(linePath);
+
+      // Draw Peak highlight circle node
+      const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+      circle.setAttribute("cx", peak.x);
+      circle.setAttribute("cy", peak.y);
+      circle.setAttribute("r", "5");
+      circle.setAttribute("fill", "#dc2626");
+      circle.setAttribute("stroke", "white");
+      circle.setAttribute("stroke-width", "2");
+      svg.appendChild(circle);
+
+      // Draw Peak text label
+      const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+      text.setAttribute("x", peak.x);
+      text.setAttribute("y", peak.y - 8);
+      text.setAttribute("text-anchor", "middle");
+      text.setAttribute("font-size", "10");
+      text.setAttribute("font-weight", "700");
+      text.setAttribute("fill", "#dc2626");
+      text.setAttribute("class", "font-sans");
+      text.innerHTML = `📈 Peak ${peak.aqi} (H${peak.hour})`;
+      svg.appendChild(text);
+
+      // Draw X Axis Grid labels
+      for (let hIdx = 0; hIdx < 24; hIdx += 4) {
+        const x = padding + (hIdx / 23) * graphWidth;
+        
+        // Tick mark line
+        const tick = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        tick.setAttribute("x1", x);
+        tick.setAttribute("y1", height - padding);
+        tick.setAttribute("x2", x);
+        tick.setAttribute("y2", height - padding + 4);
+        tick.setAttribute("stroke", "#94a3b8");
+        tick.setAttribute("stroke-width", "1");
+        svg.appendChild(tick);
+
+        // Time Text
+        const timeText = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        timeText.setAttribute("x", x);
+        timeText.setAttribute("y", height);
+        timeText.setAttribute("text-anchor", "middle");
+        timeText.setAttribute("font-size", "9");
+        timeText.setAttribute("fill", "#94a3b8");
+        timeText.setAttribute("font-weight", "600");
+        timeText.setAttribute("class", "font-sans");
+        timeText.innerHTML = `${hIdx}h`;
+        svg.appendChild(timeText);
+      }
+
+      // Add Gradient defs
+      const defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
+      const linearGradient = document.createElementNS("http://www.w3.org/2000/svg", "linearGradient");
+      linearGradient.setAttribute("id", "chart-gradient");
+      linearGradient.setAttribute("x1", "0");
+      linearGradient.setAttribute("y1", "0");
+      linearGradient.setAttribute("x2", "0");
+      linearGradient.setAttribute("y2", "1");
+
+      const stop1 = document.createElementNS("http://www.w3.org/2000/svg", "stop");
+      stop1.setAttribute("offset", "0%");
+      stop1.setAttribute("stop-color", "#4f46e5");
+
+      const stop2 = document.createElementNS("http://www.w3.org/2000/svg", "stop");
+      stop2.setAttribute("offset", "100%");
+      stop2.setAttribute("stop-color", "#f8fafc");
+      stop2.setAttribute("stop-opacity", "0");
+
+      linearGradient.appendChild(stop1);
+      linearGradient.appendChild(stop2);
+      defs.appendChild(linearGradient);
+      svg.appendChild(defs);
+    }
+
+    // Load and Save API Keys from LocalStorage
+    document.addEventListener("DOMContentLoaded", () => {
+      // Initialize Theme Toggle
+      const savedTheme = localStorage.getItem("theme") || "light";
+      const htmlEl = document.documentElement;
+      const themeToggleBtn = document.getElementById("theme-toggle-btn");
+      const themeToggleIcon = document.getElementById("theme-toggle-icon");
+
+      function applyTheme(theme) {
+        if (theme === "dark") {
+          htmlEl.classList.add("dark");
+          if (themeToggleIcon) themeToggleIcon.textContent = "☀️";
+        } else {
+          htmlEl.classList.remove("dark");
+          if (themeToggleIcon) themeToggleIcon.textContent = "🌙";
+        }
+        localStorage.setItem("theme", theme);
+      }
+
+      applyTheme(savedTheme);
+
+      if (themeToggleBtn) {
+        themeToggleBtn.addEventListener("click", () => {
+          const currentTheme = htmlEl.classList.contains("dark") ? "dark" : "light";
+          const newTheme = currentTheme === "dark" ? "light" : "dark";
+          applyTheme(newTheme);
+          if (typeof renderDashboard === "function") {
+            renderDashboard();
+          }
+        });
+      }
+
+      let storedOpenaq = localStorage.getItem("openaq_key") || "";
+      let storedOpenrouter = localStorage.getItem("openrouter_key") || "";
+      
+      // Clean up any lingering dots so they start completely blank
+      if (storedOpenaq.trim() === ".") {
+        storedOpenaq = "";
+        localStorage.setItem("openaq_key", "");
+      }
+      if (storedOpenrouter.trim() === ".") {
+        storedOpenrouter = "";
+        localStorage.setItem("openrouter_key", "");
+      }
+      
+      const inpOpenaq = document.getElementById("inp-openaq");
+      const inpOpenrouter = document.getElementById("inp-openrouter");
+      
+      if (inpOpenaq) {
+        inpOpenaq.value = storedOpenaq;
+        inpOpenaq.addEventListener("input", (e) => {
+          localStorage.setItem("openaq_key", e.target.value);
+        });
+      }
+      
+      if (inpOpenrouter) {
+        inpOpenrouter.value = storedOpenrouter;
+        inpOpenrouter.addEventListener("input", (e) => {
+          localStorage.setItem("openrouter_key", e.target.value);
+        });
+      }
+    });
+  </script>
+</body>
+</html>
