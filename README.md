@@ -44,13 +44,8 @@ Create a file named `.env` and add the following contents:
 # Required: OpenRouter key to power the LLM agents
 OPENROUTER_API_KEY="your_actual_openrouter_key_here"
 
-# Optional: OpenAQ key for live sensor data (leave blank to use AI simulation)
+# Required: OpenAQ key for live sensor data
 OPENAQ_API_KEY=""
-
-# Optional: Fallback Gemini key (Only required if OpenRouter key is omitted)
-GEMINI_API_KEY=""
-\`\`\`
-*(Note: Do not commit your `.env` file to version control.)*
 
 ### 3. Backend Setup (Python)
 Activate your virtual environment and install the Python dependencies:
